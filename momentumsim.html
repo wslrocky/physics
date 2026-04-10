@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Crash Lab - Triple Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Russo+One&family=Roboto:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #111827; /* Darker bg */
+            color: #e5e5e5;
+            overflow: hidden;
+        }
+
+        h1, h2, .game-font {
+            font-family: 'Russo One', sans-serif;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+
+        /* Game Controls Panel */
+        .control-panel {
+            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+            border-right: 1px solid #374151;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.6);
+        }
+
+        /* Inputs */
+        .input-group {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 8px 10px;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .input-group:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Calculated Field Styling */
+        .input-group.calculated {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+        }
+        .input-group.calculated label { color: #fbbf24; }
+        .input-group.calculated input { color: #fbbf24; font-weight: bold; }
+        
+        /* --- BUTTON STYLES --- */
+        .mode-btn {
+            @apply flex-1 py-3 px-2 text-[10px] font-bold uppercase tracking-normal text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center gap-1 relative overflow-hidden;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Russo One', sans-serif;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        /* Simulation Button Glow */
+        .mode-btn.sim-active {
+            background: linear-gradient(45deg, #3b82f6, #1e40af);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3), 0 0 12px rgba(59, 130, 246, 0.6);
+            transform: translateY(-1px);
+            z-index: 10;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Calculator Button Glow */
+        .mode-btn.calc-active {
+            background: linear-gradient(45deg, #f59e0b, #b45309);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3), 0 0 12px rgba(245, 158, 11, 0.6);
+            transform: translateY(-1px);
+            z-index: 10;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Game Button Glow */
+        .mode-btn.game-active {
+            background: linear-gradient(45deg, #8b5cf6, #5b21b6);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3), 0 0 12px rgba(139, 92, 246, 0.6);
+            transform: translateY(-1px);
+            z-index: 10;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Inactive State */
+        .mode-btn.inactive {
+            background: linear-gradient(180deg, #374151, #1f2937);
+            color: #9ca3af;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+            border: 1px solid #4b5563;
+            opacity: 0.8;
+        }
+        .mode-btn.inactive:hover {
+            background: linear-gradient(180deg, #4b5563, #374151);
+            color: #e5e5e5;
+            opacity: 1;
+        }
+
+        /* --- DIVIDER STYLE --- */
+        .tech-divider {
+            display: flex; align-items: center; text-align: center; margin: 24px 0 20px 0; width: 100%;
+        }
+        .tech-divider::before, .tech-divider::after {
+            content: ''; flex: 1; border-bottom: 1px solid #4b5563;
+        }
+        .tech-divider::before {
+            margin-right: .5em; background: linear-gradient(to left, #4b5563, transparent); height: 1px; border: 0;
+        }
+        .tech-divider::after {
+            margin-left: .5em; background: linear-gradient(to right, #4b5563, transparent); height: 1px; border: 0;
+        }
+        .tech-divider span {
+            font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: #9ca3af;
+            font-weight: bold; background: #1f2937; padding: 4px 12px;
+            border-radius: 99px; border: 1px solid #374151; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input[type="number"] {
+            background: transparent; color: white; font-family: 'Russo One', monospace; border: none; width: 100%; font-size: 1.1rem;
+        }
+        input[type="number"]:focus { outline: none; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        /* Action Button */
+        .btn-game {
+            background: linear-gradient(45deg, #ef4444, #b91c1c);
+            border: none; border-radius: 6px; transition: all 0.2s;
+            text-transform: uppercase; font-family: 'Russo One', sans-serif; letter-spacing: 1px;
+            cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .btn-game:hover {
+            transform: translateY(-2px); box-shadow: 0 8px 15px rgba(239, 68, 68, 0.4); filter: brightness(1.1);
+        }
+        .btn-game:active { transform: translateY(1px); }
+
+        .btn-quiz {
+            background: linear-gradient(45deg, #8b5cf6, #6d28d9);
+        }
+        .btn-quiz:hover { box-shadow: 0 8px 15px rgba(139, 92, 246, 0.4); }
+
+        /* HUD Overlay */
+        .hud-panel {
+            background: rgba(17, 24, 39, 0.9); border: 1px solid #374151; backdrop-filter: blur(8px);
+        }
+
+        /* Math Formatting */
+        .math-ctx { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.95em; line-height: 1.6; }
+        .math-ctx i { font-family: inherit; font-style: italic; color: #93c5fd; }
+        .fraction { display: inline-block; vertical-align: middle; text-align: center; margin: 0 4px; }
+        .fraction > .num { border-bottom: 1px solid #9ca3af; display: block; padding: 0 4px; font-size: 0.9em; }
+        .fraction > .den { display: block; padding: 0 4px; font-size: 0.9em; }
+        
+        select {
+            background: #1f2937; color: white; border: 1px solid #374151; padding: 10px;
+            border-radius: 6px; width: 100%; font-size: 0.9rem; cursor: pointer; transition: border-color 0.2s;
+        }
+        select:hover { border-color: #6b7280; }
+        select:focus { outline: none; border-color: #f59e0b; }
+
+        /* Quiz Specifics */
+        .quiz-option {
+            background: #1f2937; border: 1px solid #374151; transition: all 0.2s;
+        }
+        .quiz-option:hover { background: #374151; border-color: #9ca3af; transform: translateY(-2px); }
+        .quiz-correct { background: #065f46 !important; border-color: #34d399 !important; }
+        .quiz-wrong { background: #7f1d1d !important; border-color: #f87171 !important; }
+        
+        @keyframes countdown {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        .timer-bar {
+            animation: countdown 60s linear forwards;
+        }
+    </style>
+</head>
+<body class="flex h-screen w-screen overflow-hidden text-gray-100">
+
+    <!-- Left Controls Panel -->
+    <aside class="control-panel w-96 flex flex-col z-20 overflow-hidden flex-shrink-0">
+        
+        <!-- Header -->
+        <div class="p-6 pb-2">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-car-burst text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl tracking-wider text-white leading-none">CRASH LAB</h1>
+                    <div class="text-[10px] text-gray-500 font-bold tracking-[0.2em] mt-1">PHYSICS ENGINE</div>
+                </div>
+            </div>
+            
+            <!-- Modern Mode Switcher (Three Buttons) -->
+            <div class="flex gap-2 mb-2">
+                <div id="btn_sim" onclick="setMode('sim')" class="mode-btn sim-active group">
+                    <i class="fa-solid fa-flask text-base mb-1 group-hover:scale-110 transition-transform text-blue-200"></i>
+                    <span class="text-white">Simulate</span>
+                    <span class="opacity-70 font-sans font-medium text-[9px] normal-case tracking-normal text-blue-100">Prediction</span>
+                </div>
+                <div id="btn_calc" onclick="setMode('calc')" class="mode-btn inactive group">
+                    <i class="fa-solid fa-calculator text-base mb-1 group-hover:scale-110 transition-transform text-amber-200"></i>
+                    <span class="text-white">Solver</span>
+                    <span class="opacity-70 font-sans font-medium text-[9px] normal-case tracking-normal text-amber-100">Calculator</span>
+                </div>
+                <div id="btn_game" onclick="setMode('game')" class="mode-btn inactive group">
+                    <i class="fa-solid fa-gamepad text-base mb-1 group-hover:scale-110 transition-transform text-purple-200"></i>
+                    <span class="text-white">Quiz</span>
+                    <span class="opacity-70 font-sans font-medium text-[9px] normal-case tracking-normal text-purple-100">Challenge</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-y-auto flex-1 px-6 pb-6">
+
+            <!-- MODE A: SIMULATION CONTROLS -->
+            <div id="panel_sim" class="block animate-fade-in">
+                <div class="mb-2">
+                    <h2 class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-3 flex items-center">
+                        <span class="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
+                        1. Select Scenario
+                    </h2>
+                    <div class="grid gap-2">
+                        <button onclick="setScenario('chasing')" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-3 rounded-lg text-xs text-left w-full transition flex items-center group">
+                            <div class="w-8 h-8 rounded bg-blue-900/30 text-blue-400 flex items-center justify-center mr-3 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-flag-checkered"></i>
+                            </div>
+                            <span class="font-medium text-gray-300 group-hover:text-white">Speed Chase</span>
+                        </button>
+                        <button onclick="setScenario('stationary')" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-3 rounded-lg text-xs text-left w-full transition flex items-center group">
+                            <div class="w-8 h-8 rounded bg-green-900/30 text-green-400 flex items-center justify-center mr-3 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-stop-circle"></i>
+                            </div>
+                            <span class="font-medium text-gray-300 group-hover:text-white">Rear End Collision</span>
+                        </button>
+                        <button onclick="setScenario('headon')" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-3 rounded-lg text-xs text-left w-full transition flex items-center group">
+                            <div class="w-8 h-8 rounded bg-red-900/30 text-red-400 flex items-center justify-center mr-3 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-arrows-left-right-to-line"></i>
+                            </div>
+                            <span class="font-medium text-gray-300 group-hover:text-white">Head-On Impact</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tech-divider"><span>INPUT DATA PARAMETERS</span></div>
+
+                <div class="mb-6">
+                    <h2 class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-3 flex items-center">
+                        <span class="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
+                        2. Initial Conditions
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-gray-800/50 rounded-xl border border-blue-500/20">
+                            <div class="text-[10px] text-blue-400 font-bold uppercase tracking-wide mb-2 flex justify-between">Blue Car</div>
+                            <div class="space-y-2">
+                                <div><label class="text-[9px] text-gray-500 uppercase font-bold">Mass (kg)</label><input type="number" id="sim_m1" value="1000" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
+                                <div><label class="text-[9px] text-gray-500 uppercase font-bold">Velocity (m/s)</label><input type="number" id="sim_u1" value="20" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-gray-800/50 rounded-xl border border-red-500/20">
+                            <div class="text-[10px] text-red-400 font-bold uppercase tracking-wide mb-2 flex justify-between">Red Truck</div>
+                            <div class="space-y-2">
+                                <div><label class="text-[9px] text-gray-500 uppercase font-bold">Mass (kg)</label><input type="number" id="sim_m2" value="1500" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
+                                <div><label class="text-[9px] text-gray-500 uppercase font-bold">Velocity (m/s)</label><input type="number" id="sim_u2" value="0" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6 p-4 bg-gradient-to-r from-orange-900/10 to-transparent border-l-2 border-orange-500 rounded-r-lg">
+                    <h2 class="text-xs text-orange-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-crosshairs"></i> 3. Prediction
+                    </h2>
+                    <p class="text-[9px] text-gray-400 mb-3 leading-tight">Enter your predicted final velocity for <b>each</b> vehicle. The report will verify if Momentum is Conserved.</p>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Blue Final Input -->
+                        <div class="input-group border-blue-500/30 bg-blue-900/10">
+                            <label class="block text-[9px] text-blue-300 font-bold uppercase mb-1">Blue Final (v1)</label>
+                            <div class="flex items-baseline">
+                                <input type="number" id="sim_v1_target" value="8" class="text-xl text-blue-400 font-bold">
+                                <span class="text-xs text-gray-500 ml-1">m/s</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Red Final Input -->
+                        <div class="input-group border-red-500/30 bg-red-900/10">
+                            <label class="block text-[9px] text-red-300 font-bold uppercase mb-1">Red Final (v2)</label>
+                            <div class="flex items-baseline">
+                                <input type="number" id="sim_v2_target" value="8" class="text-xl text-red-400 font-bold">
+                                <span class="text-xs text-gray-500 ml-1">m/s</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="mainBtnSim" onclick="toggleSim()" class="btn-game w-full py-4 text-xl shadow-lg relative overflow-hidden group mt-6">
+                    <span class="relative z-10 flex items-center justify-center gap-2" id="btnTextSim"><i class="fa-solid fa-play"></i> RUN SIMULATION</span>
+                </button>
+            </div>
+
+            <!-- MODE B: CALCULATOR CONTROLS -->
+            <div id="panel_calc" class="hidden animate-fade-in">
+                <div class="mb-2">
+                    <h2 class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-3 flex items-center">
+                        <span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-2"></span>
+                        1. Load Preset
+                    </h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setProblem('find_v2')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-[10px] text-left transition text-gray-300 border border-gray-700">Standard Crash</button>
+                        <button onclick="setProblem('find_u1')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-[10px] text-left transition text-gray-300 border border-gray-700">Find Initial U1</button>
+                        <button onclick="setProblem('find_m2')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-[10px] text-left transition text-gray-300 border border-gray-700">Mystery Mass</button>
+                        <button onclick="setProblem('recoil')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-[10px] text-left transition text-gray-300 border border-gray-700">Recoil/Explosion</button>
+                    </div>
+                </div>
+
+                <div class="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700 mt-4">
+                    <h2 class="text-xs text-amber-500 font-bold uppercase tracking-widest mb-2">2. Solve For</h2>
+                    <select id="unknownSelector" onchange="updateSolverMode()">
+                        <option value="v2">Final Velocity Red (v2)</option>
+                        <option value="v1">Final Velocity Blue (v1)</option>
+                        <option value="u1">Initial Velocity Blue (u1)</option>
+                        <option value="u2">Initial Velocity Red (u2)</option>
+                        <option value="m1">Mass Blue (m1)</option>
+                        <option value="m2">Mass Red (m2)</option>
+                    </select>
+                </div>
+
+                <div class="tech-divider"><span>INPUT PARAMETERS</span></div>
+
+                <div class="space-y-4 mb-4">
+                    <div class="pl-3 border-l-2 border-blue-500">
+                        <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2">Blue Car (Obj 1)</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="input-group" id="grp_calc_m1"><label class="block text-[8px] uppercase font-bold text-gray-500">Mass</label><input type="number" id="calc_m1" value="1000" oninput="solve()"></div>
+                            <div class="input-group" id="grp_calc_u1"><label class="block text-[8px] uppercase font-bold text-gray-500">Init</label><input type="number" id="calc_u1" value="20" oninput="solve()"></div>
+                            <div class="input-group" id="grp_calc_v1"><label class="block text-[8px] uppercase font-bold text-gray-500">Final</label><input type="number" id="calc_v1" value="10" oninput="solve()"></div>
+                        </div>
+                    </div>
+                    <div class="pl-3 border-l-2 border-red-500">
+                        <h3 class="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">Red Truck (Obj 2)</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="input-group" id="grp_calc_m2"><label class="block text-[8px] uppercase font-bold text-gray-500">Mass</label><input type="number" id="calc_m2" value="1500" oninput="solve()"></div>
+                            <div class="input-group" id="grp_calc_u2"><label class="block text-[8px] uppercase font-bold text-gray-500">Init</label><input type="number" id="calc_u2" value="0" oninput="solve()"></div>
+                            <div class="input-group" id="grp_calc_v2"><label class="block text-[8px] uppercase font-bold text-gray-500">Final</label><input type="number" id="calc_v2" value="0" oninput="solve()"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="mainBtnCalc" onclick="toggleSim()" class="btn-game w-full py-4 text-xl shadow-lg relative overflow-hidden group mt-6">
+                    <span class="relative z-10 flex items-center justify-center gap-2" id="btnTextCalc"><i class="fa-solid fa-play"></i> RUN SIMULATION</span>
+                </button>
+            </div>
+
+            <!-- MODE C: GAME CONTROLS -->
+            <div id="panel_game" class="hidden animate-fade-in">
+                <div class="p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl mb-6">
+                    <h2 class="text-sm text-purple-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-trophy"></i> CHALLENGE MODE
+                    </h2>
+                    <p class="text-xs text-gray-400 leading-relaxed mb-4">
+                        Test your physics skills! You have 60 seconds to answer 10 AI-generated momentum questions.
+                    </p>
+                    <div class="grid grid-cols-2 gap-2 text-center">
+                        <div class="bg-gray-800 p-2 rounded">
+                            <div class="text-xs text-gray-500 uppercase">Questions</div>
+                            <div class="text-xl font-mono font-bold text-white">10</div>
+                        </div>
+                        <div class="bg-gray-800 p-2 rounded">
+                            <div class="text-xs text-gray-500 uppercase">Time Limit</div>
+                            <div class="text-xl font-mono font-bold text-white">60s</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-divider"><span>READY?</span></div>
+
+                <button onclick="startGame()" class="btn-game btn-quiz w-full py-6 text-xl shadow-lg relative overflow-hidden group mt-6">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rocket"></i> START GAME
+                    </span>
+                </button>
+            </div>
+
+            <!-- Reset Button (Shared) -->
+            <button onclick="resetSim()" class="mt-4 w-full text-[10px] text-gray-500 hover:text-white uppercase tracking-wider transition-colors flex items-center justify-center gap-1">
+                <i class="fa-solid fa-rotate-right"></i> Reset System
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Game View -->
+    <main class="flex-1 relative bg-gray-900 flex flex-col">
+        
+        <!-- Canvas Layer -->
+        <div id="canvasWrapper" class="absolute inset-0 bg-gray-900">
+            <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+            <div class="absolute inset-0 pointer-events-none opacity-5" style="background-image: linear-gradient(#4b5563 1px, transparent 1px), linear-gradient(90deg, #4b5563 1px, transparent 1px); background-size: 40px 40px;"></div>
+        </div>
+
+        <!-- HUD Layer (Overlays) -->
+        <div id="simulationHUD" class="absolute top-0 left-0 w-full p-6 pointer-events-none flex justify-between items-start z-10">
+            <!-- P1 Stats -->
+            <div class="hud-panel p-4 rounded-xl border-l-4 border-blue-500 w-52 shadow-2xl">
+                <div class="text-[10px] text-blue-400 uppercase font-bold mb-1 tracking-wider">Blue Momentum</div>
+                <div class="text-3xl game-font text-white" id="hud_p1">0</div>
+                <div class="text-[10px] text-gray-500 font-mono">kg·m/s</div>
+            </div>
+            <!-- P2 Stats -->
+            <div class="hud-panel p-4 rounded-xl border-r-4 border-red-500 w-52 text-right shadow-2xl">
+                <div class="text-[10px] text-red-400 uppercase font-bold mb-1 tracking-wider">Red Momentum</div>
+                <div class="text-3xl game-font text-white" id="hud_p2">0</div>
+                <div class="text-[10px] text-gray-500 font-mono">kg·m/s</div>
+            </div>
+        </div>
+
+        <!-- Report Panel (Sim/Calc Mode) -->
+        <div id="reportPanel" class="hud-panel p-8 rounded-2xl border border-gray-700 text-center transform translate-y-[-200%] transition-transform duration-500 ease-out pointer-events-auto shadow-2xl bg-gray-900/95 max-w-4xl w-full mx-auto absolute left-0 right-0 top-24 z-50 overflow-y-auto max-h-[80vh]">
+            <div class="flex justify-between items-start mb-6 border-b border-gray-700 pb-4">
+                <div class="text-left">
+                    <div class="text-amber-500 uppercase text-[10px] font-bold tracking-[0.3em] mb-1">Mission Report</div>
+                    <h2 class="text-3xl text-white font-bold tracking-tight" id="reportTitle">ANALYSIS COMPLETE</h2>
+                </div>
+                <div id="feasibilityBadge" class="px-4 py-2 rounded-lg text-xs font-bold bg-gray-800 text-gray-400 border border-gray-700">--</div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 text-left">
+                <div class="bg-gray-950 p-6 rounded-xl border border-gray-800 text-gray-300 overflow-x-auto math-ctx shadow-inner">
+                    <h3 class="text-amber-500 font-sans uppercase mb-4 text-[10px] font-bold tracking-widest flex items-center"><i class="fa-solid fa-terminal mr-2"></i> Physics Engine Log</h3>
+                    <div id="solverLog" class="space-y-4 text-sm leading-relaxed"></div>
+                </div>
+                <div class="space-y-4 font-sans">
+                     <div class="bg-gray-800/50 p-5 rounded-xl border border-gray-700">
+                        <h3 class="text-xs text-gray-400 font-bold uppercase mb-3 tracking-wider">Energy Analysis (ΔKE)</h3>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-gray-400 text-sm">Total Kinetic Energy Change</span>
+                            <span class="font-mono text-2xl text-white font-bold" id="rep_ke">0 J</span>
+                        </div>
+                        <div class="h-1 w-full bg-gray-700 rounded-full overflow-hidden mb-2">
+                            <div id="energyBar" class="h-full bg-blue-500 w-0 transition-all duration-1000"></div>
+                        </div>
+                        <div class="text-[10px] text-gray-500 text-right uppercase tracking-wider font-bold" id="energy_note">--</div>
+                    </div>
+                    <div class="bg-gray-800/50 p-5 rounded-xl border border-gray-700">
+                        <h3 class="text-xs text-gray-400 font-bold uppercase mb-3 tracking-wider">Velocity Delta (m/s)</h3>
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-[10px] text-gray-500 uppercase border-b border-gray-700 font-bold"><tr><th class="pb-2 pl-2">Vehicle</th><th class="pb-2 text-right">Initial (u)</th><th class="pb-2 text-right pr-2">Final (v)</th></tr></thead>
+                            <tbody class="font-mono">
+                                <tr class="border-b border-gray-700/50"><td class="py-3 pl-2 text-blue-400 font-bold">Blue</td><td class="py-3 text-right text-gray-400" id="tbl_u1">0</td><td class="py-3 text-right pr-2 text-white font-bold" id="tbl_v1">0</td></tr>
+                                <tr><td class="py-3 pl-2 text-red-400 font-bold">Red</td><td class="py-3 text-right text-gray-400" id="tbl_u2">0</td><td class="py-3 text-right pr-2 text-white font-bold" id="tbl_v2">0</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="resetSim()" class="px-8 py-3 bg-white text-gray-900 hover:bg-gray-200 transition-colors uppercase text-xs font-bold tracking-widest rounded shadow-lg flex items-center gap-2"><i class="fa-solid fa-rotate-left"></i> Reset & Replay</button>
+            </div>
+        </div>
+
+        <!-- GAME MODE INTERFACE -->
+        <div id="gameInterface" class="hidden absolute inset-0 bg-gray-900/95 z-50 flex flex-col items-center justify-start pt-10 md:justify-center md:pt-0 p-8 backdrop-blur-sm overflow-y-auto">
+            
+            <!-- Game HUD -->
+            <div class="w-full max-w-3xl flex justify-between items-center mb-8 flex-shrink-0">
+                <div class="text-left">
+                    <div class="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">SCORE</div>
+                    <div class="text-2xl md:text-4xl font-mono text-purple-400 font-bold"><span id="gameScore">0</span><span class="text-gray-600 text-lg md:text-2xl">/10</span></div>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-purple-500 flex items-center justify-center bg-gray-800 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+                        <span id="gameTimer" class="text-2xl md:text-3xl font-mono font-bold text-white">60</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">QUESTION</div>
+                    <div class="text-2xl md:text-4xl font-mono text-white font-bold"><span id="gameQNum">1</span><span class="text-gray-600 text-lg md:text-2xl">/10</span></div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="w-full max-w-3xl bg-gray-800 p-6 md:p-8 rounded-2xl border border-gray-700 shadow-2xl mb-8 relative overflow-hidden flex-shrink-0">
+                <!-- Timer Bar -->
+                <div class="absolute top-0 left-0 h-1 bg-purple-600 timer-bar" id="progressBar"></div>
+                
+                <h3 class="text-xs text-purple-400 font-bold uppercase tracking-widest mb-4">Physics AI Question Generator</h3>
+                <p id="questionText" class="text-xl md:text-2xl text-white font-medium leading-relaxed break-words">
+                    Generating question...
+                </p>
+            </div>
+
+            <!-- Options -->
+            <div id="optionsGrid" class="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4 pb-10">
+                <button class="quiz-option p-4 md:p-6 rounded-xl text-lg md:text-xl font-bold text-gray-300 text-left"></button>
+                <button class="quiz-option p-4 md:p-6 rounded-xl text-lg md:text-xl font-bold text-gray-300 text-left"></button>
+                <button class="quiz-option p-4 md:p-6 rounded-xl text-lg md:text-xl font-bold text-gray-300 text-left"></button>
+                <button class="quiz-option p-4 md:p-6 rounded-xl text-lg md:text-xl font-bold text-gray-300 text-left"></button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="gameOverScreen" class="hidden absolute inset-0 bg-gray-900 z-50 flex flex-col items-center justify-center text-center">
+                <div class="text-purple-500 text-6xl mb-4"><i class="fa-solid fa-flag-checkered"></i></div>
+                <h2 class="text-5xl font-bold text-white mb-2 font-mono">GAME OVER</h2>
+                <div class="text-xl text-gray-400 mb-8 uppercase tracking-widest">Final Score: <span id="finalScore" class="text-white font-bold">0</span></div>
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 max-w-md w-full mb-8">
+                    <div class="text-xs text-gray-500 uppercase tracking-widest mb-2">Performance Rank</div>
+                    <div id="finalRank" class="text-2xl font-bold text-purple-400">Physics Novice</div>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="setMode('sim')" class="px-8 py-3 border border-gray-600 rounded text-gray-300 hover:text-white hover:border-gray-400 uppercase tracking-wider text-xs font-bold">Return to Lab</button>
+                    <button onclick="startGame()" class="px-8 py-3 bg-purple-600 hover:bg-purple-700 rounded text-white uppercase tracking-wider text-xs font-bold shadow-lg shadow-purple-900/50">Play Again</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+<script>
+    // --- APP STATE ---
+    let mode = 'sim'; // 'sim', 'calc', 'game'
+    let simState = 'idle'; // 'idle', 'running', 'ended'
+    
+    // Physics State
+    let m1 = 1000, u1 = 20, v1 = 0;
+    let m2 = 1500, u2 = 0, v2 = 0;
+    
+    // Canvas & Animation
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let animId;
+    let p1_x, p2_x; // positions
+    let collisionX;
+    
+    // Visual Assets
+    let stars = [];
+    let buildings = [];
+    
+    // Crash Animation
+    let crashTimestamp = 0;
+    
+    // --- INITIALIZATION ---
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        setMode('sim');
+        // Initial Draw
+        draw();
+    }
+    
+    function generateScenery() {
+        // 1. Stars
+        stars = [];
+        for(let i=0; i<50; i++) {
+            stars.push({
+                x: Math.random(),
+                y: Math.random() * 0.6, // Top 60% only
+                size: Math.random() * 2,
+                opacity: Math.random()
+            });
+        }
+        
+        // 2. Cityscape
+        buildings = [];
+        let curX = 0;
+        const horizonY = height/2; 
+        while(curX < width) {
+            const bWidth = 40 + Math.random() * 60;
+            const bHeight = 50 + Math.random() * 150;
+            const bY = horizonY - bHeight + 20; // Sit slightly behind road
+            
+            // Generate static window data
+            const windowData = [];
+            if(Math.random() > 0.3) { // Some have windows
+                for(let wy = bY + 10; wy < bY + bHeight - 10; wy += 15) {
+                    if(Math.random() > 0.5) {
+                        windowData.push(wy); // Store Y position
+                    }
+                }
+            }
+
+            buildings.push({
+                x: curX,
+                y: bY,
+                w: bWidth,
+                h: bHeight,
+                windows: windowData // Store array of Y positions
+            });
+            curX += bWidth - 5; // Slight overlap
+        }
+    }
+    
+    function resize() {
+        width = canvas.width = document.getElementById('canvasWrapper').offsetWidth;
+        height = canvas.height = document.getElementById('canvasWrapper').offsetHeight;
+        generateScenery();
+        resetPositions();
+    }
+    
+    function resetPositions() {
+        collisionX = width / 2;
+        p1_x = collisionX - 300;
+        p2_x = collisionX + 300;
+        if(mode === 'sim') {
+            // Update inputs from state or defaults
+            document.getElementById('sim_m1').value = m1;
+            document.getElementById('sim_u1').value = u1;
+            document.getElementById('sim_m2').value = m2;
+            document.getElementById('sim_u2').value = u2;
+            draw();
+        }
+    }
+    
+    // --- MODE SWITCHING ---
+    function setMode(newMode) {
+        mode = newMode;
+        
+        // Hide Game UI if open
+        document.getElementById('gameInterface').classList.add('hidden');
+
+        // Update Buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.add('inactive');
+            btn.classList.remove('sim-active', 'calc-active', 'game-active');
+        });
+        
+        const btnMap = { 'sim': 'sim-active', 'calc': 'calc-active', 'game': 'game-active' };
+        document.getElementById('btn_' + mode).classList.remove('inactive');
+        document.getElementById('btn_' + mode).classList.add(btnMap[mode]);
+        
+        // Show Panels
+        document.getElementById('panel_sim').classList.add('hidden');
+        document.getElementById('panel_calc').classList.add('hidden');
+        document.getElementById('panel_game').classList.add('hidden');
+        
+        document.getElementById('panel_' + mode).classList.remove('hidden');
+        
+        // Reset Logic
+        resetSim();
+        
+        if (mode === 'calc') updateSolverMode();
+        if (mode === 'game') {
+            // Just show start screen
+            draw();
+        }
+    }
+    
+    // --- SCENARIO PRESETS (SIM MODE) ---
+    function setScenario(type) {
+        if(type === 'chasing') {
+            document.getElementById('sim_u1').value = 25;
+            document.getElementById('sim_u2').value = 10;
+        } else if (type === 'stationary') {
+            document.getElementById('sim_u1').value = 20;
+            document.getElementById('sim_u2').value = 0;
+        } else if (type === 'headon') {
+            document.getElementById('sim_u1').value = 15;
+            document.getElementById('sim_u2').value = -15;
+        }
+        resetSim();
+    }
+
+    // --- MAIN LOOP ---
+    function draw() {
+        const roadLevel = height/2 + 40;
+
+        // 1. Sky Gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, '#0f172a'); // Deep dark blue
+        grad.addColorStop(0.6, '#1e1b4b'); // Indigo
+        grad.addColorStop(1, '#312e81'); // Lighter at horizon
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+        
+        // 2. Stars
+        ctx.fillStyle = 'white';
+        stars.forEach(s => {
+            ctx.globalAlpha = s.opacity;
+            ctx.beginPath();
+            ctx.arc(s.x * width, s.y * height, s.size, 0, Math.PI*2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1.0;
+
+        // 3. Cityscape Silhouette
+        ctx.fillStyle = '#111827'; // Darker than sky, barely visible
+        buildings.forEach(b => {
+            ctx.fillRect(b.x, b.y, b.w, b.h);
+            
+            // Windows (Static)
+            if(b.windows.length > 0) {
+                ctx.fillStyle = '#fbbf24'; // Warm light
+                ctx.globalAlpha = 0.3;
+                b.windows.forEach(wy => {
+                    ctx.fillRect(b.x + 5, wy, 4, 8);
+                    ctx.fillRect(b.x + b.w - 10, wy, 4, 8);
+                });
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = '#111827'; // Reset
+            }
+        });
+
+        // 4. Ground/Grass Strip (Behind Road)
+        ctx.fillStyle = '#064e3b'; // Dark green
+        ctx.fillRect(0, roadLevel - 10, width, 10);
+
+        // 5. Road Surface
+        ctx.fillStyle = '#374151'; // Asphalt Gray
+        ctx.fillRect(0, roadLevel, width, height - roadLevel);
+        
+        // Road Noise/Texture (Simple)
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        ctx.fillRect(0, roadLevel, width, 5); // Shadow at curb
+        
+        // White Lane Markers (Dashed)
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([40, 60]);
+        ctx.beginPath();
+        ctx.moveTo(0, roadLevel + 60);
+        ctx.lineTo(width, roadLevel + 60);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Curb (Yellow line top)
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(0, roadLevel, width, 4);
+
+        // 6. Cars
+        drawCar(p1_x, height/2, '#3b82f6', m1); // Blue
+        drawCar(p2_x, height/2, '#ef4444', m2); // Red
+        
+        // 7. Collision Marker / Explosion
+        if (simState === 'running' || simState === 'ended') {
+            if (crashTimestamp > 0) {
+                 drawExplosion(collisionX, height/2 + 15, performance.now() - crashTimestamp);
+            }
+        }
+    }
+    
+    function drawExplosion(x, y, timeSince) {
+        if (timeSince > 2000) return; // Expire after 2s
+        
+        const opacity = 1 - (timeSince / 2000);
+        const radius = 10 + (timeSince / 10);
+        
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Outer Glow
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.5, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255, 100, 0, ${opacity * 0.3})`;
+        ctx.fill();
+        
+        // Core Fire (Jagged)
+        ctx.beginPath();
+        const spikes = 12;
+        for(let i=0; i<spikes*2; i++) {
+            const r = (i % 2 === 0) ? radius : radius/2;
+            const a = (i / (spikes*2)) * Math.PI*2;
+            const wobble = Math.sin(timeSince * 0.05 + i) * 5;
+            ctx.lineTo(Math.cos(a) * (r + wobble), Math.sin(a) * (r + wobble));
+        }
+        ctx.closePath();
+        ctx.fillStyle = `rgba(255, ${200 - (timeSince/10)}, 0, ${opacity})`;
+        ctx.fill();
+        
+        // Smoke Particles
+        for(let i=0; i<5; i++) {
+            const smokeR = radius * 0.5;
+            const angle = (timeSince * 0.001) + (i * Math.PI * 0.4);
+            const dist = (timeSince / 15) + (i*10);
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle)*dist, Math.sin(angle)*dist - (timeSince/10), smokeR, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(100, 100, 100, ${opacity * 0.5})`;
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+    
+    function drawCar(x, y, color, mass) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.beginPath();
+        ctx.ellipse(0, 45, 40, 10, 0, 0, Math.PI*2);
+        ctx.fill();
+        
+        // Body
+        ctx.fillStyle = color;
+        // Simple sport car shape
+        ctx.beginPath();
+        ctx.moveTo(-40, 40);
+        ctx.lineTo(40, 40); // bottom
+        ctx.lineTo(40, 10); // front bumper
+        ctx.quadraticCurveTo(20, 10, 10, -10); // hood to windshield
+        ctx.lineTo(-20, -10); // roof
+        ctx.lineTo(-40, 10); // back
+        ctx.closePath();
+        ctx.fill();
+        
+        // Wheels
+        ctx.fillStyle = '#111';
+        ctx.beginPath(); ctx.arc(-25, 40, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(25, 40, 12, 0, Math.PI*2); ctx.fill();
+        
+        // Mass Label
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(mass + 'kg', 0, 20);
+        
+        ctx.restore();
+    }
+    
+    // --- SIMULATION LOGIC ---
+    let lastTime = 0;
+    
+    function toggleSim() {
+        if(simState === 'idle') {
+            startSimulation();
+        } else {
+            resetSim();
+        }
+    }
+    
+    function startSimulation() {
+        simState = 'running';
+        
+        // 1. Get Values based on mode
+        if (mode === 'sim') {
+            m1 = parseFloat(document.getElementById('sim_m1').value);
+            u1 = parseFloat(document.getElementById('sim_u1').value);
+            m2 = parseFloat(document.getElementById('sim_m2').value);
+            u2 = parseFloat(document.getElementById('sim_u2').value);
+            
+            // In Scenario Mode, we trust the USER inputs for final velocity animation
+            v1 = parseFloat(document.getElementById('sim_v1_target').value);
+            v2 = parseFloat(document.getElementById('sim_v2_target').value);
+            
+            document.getElementById('btnTextSim').innerHTML = '<i class="fa-solid fa-stop"></i> STOP';
+            
+        } else if (mode === 'calc') {
+            // In Calc Mode, the solver has already run via oninput events
+            // We just need to grab the current input values for animation
+            m1 = parseFloat(document.getElementById('calc_m1').value);
+            u1 = parseFloat(document.getElementById('calc_u1').value);
+            v1 = parseFloat(document.getElementById('calc_v1').value);
+            m2 = parseFloat(document.getElementById('calc_m2').value);
+            u2 = parseFloat(document.getElementById('calc_u2').value);
+            v2 = parseFloat(document.getElementById('calc_v2').value);
+            
+            document.getElementById('btnTextCalc').innerHTML = '<i class="fa-solid fa-stop"></i> STOP';
+        }
+        
+        // Reset Positions for run
+        collisionX = width/2;
+        // Back them up based on velocity to ensure they hit at center roughly
+        // Simplified: Fixed start points
+        p1_x = collisionX - 300; 
+        p2_x = collisionX + 300;
+        
+        lastTime = performance.now();
+        animId = requestAnimationFrame(update);
+    }
+    
+    function resetSim() {
+        simState = 'idle';
+        crashTimestamp = 0;
+        cancelAnimationFrame(animId);
+        
+        // Hide Report
+        document.getElementById('reportPanel').style.transform = 'translateY(-200%)';
+        
+        // Reset Buttons
+        document.getElementById('btnTextSim').innerHTML = '<i class="fa-solid fa-play"></i> RUN SIMULATION';
+        document.getElementById('btnTextCalc').innerHTML = '<i class="fa-solid fa-play"></i> RUN SIMULATION';
+        
+        resetPositions();
+        
+        // Reset HUD
+        document.getElementById('hud_p1').innerText = '0';
+        document.getElementById('hud_p2').innerText = '0';
+        
+        // Redraw static
+        draw();
+    }
+    
+    function update(time) {
+        const dt = (time - lastTime) / 1000; // seconds
+        lastTime = time;
+        
+        // Physics Loop (Simplified for Visuals)
+        const speedScale = 2.0; // Visual speed multiplier (Increased for faster motion)
+        
+        // Detect Collision
+        const dist = p2_x - p1_x;
+        
+        // Only trigger the initial crash once
+        if (crashTimestamp === 0 && dist <= 85) {
+            crashTimestamp = time; // Mark collision time
+            collisionX = (p1_x + p2_x) / 2; // Capture exact impact point
+        }
+        
+        // If crashTimestamp is set, they are currently in a crashed state
+        const hasCrashed = crashTimestamp > 0; 
+        
+        if (!hasCrashed) {
+            // Move with Initial Velocity
+            p1_x += u1 * speedScale;
+            p2_x += u2 * speedScale; // u2 usually negative if coming from right, or 0
+        } else {
+            // Move with Final Velocity
+            p1_x += v1 * speedScale;
+            p2_x += v2 * speedScale;
+            
+            // Show Report after a few seconds of post-crash
+            if (document.getElementById('reportPanel').style.transform.includes('-200')) {
+                // Generate Report Data
+                generateReport();
+                // Show it
+                setTimeout(() => {
+                    document.getElementById('reportPanel').style.transform = 'translateY(0)';
+                }, 500);
+            }
+        }
+        
+        // Update Real-time HUD
+        const curV1 = hasCrashed ? v1 : u1;
+        const curV2 = hasCrashed ? v2 : u2;
+        document.getElementById('hud_p1').innerText = (m1 * curV1).toFixed(0);
+        document.getElementById('hud_p2').innerText = (m2 * curV2).toFixed(0);
+        
+        draw();
+        
+        if (simState === 'running') {
+            requestAnimationFrame(update);
+        }
+    }
+    
+    // --- REPORT GENERATION ---
+    function generateReport() {
+        const Pi = (m1 * u1) + (m2 * u2);
+        const Pf = (m1 * v1) + (m2 * v2);
+        
+        const KEi = 0.5 * m1 * u1 * u1 + 0.5 * m2 * u2 * u2;
+        const KEf = 0.5 * m1 * v1 * v1 + 0.5 * m2 * v2 * v2;
+        const dKE = KEf - KEi;
+        
+        // DOM Elements
+        const log = document.getElementById('solverLog');
+        const badge = document.getElementById('feasibilityBadge');
+        
+        // Update Table
+        document.getElementById('tbl_u1').innerText = u1.toFixed(1);
+        document.getElementById('tbl_v1').innerText = v1.toFixed(1);
+        document.getElementById('tbl_u2').innerText = u2.toFixed(1);
+        document.getElementById('tbl_v2').innerText = v2.toFixed(1);
+        document.getElementById('rep_ke').innerText = dKE.toFixed(0) + " J";
+        
+        // Energy Bar visual
+        const bar = document.getElementById('energyBar');
+        const note = document.getElementById('energy_note');
+        
+        // Analysis Logic
+        let html = "";
+        
+        if (mode === 'sim') {
+            // In Scenario Mode, we check if the USER's prediction was valid
+            
+            // 1. Basic Momentum Check
+            const momentumDiff = Math.abs(Pf - Pi);
+            const isConserved = momentumDiff < 50; // Tolerance
+            
+// 2. Physical Validity Checks
+
+// A) Penetration Check
+const isPenetration = v1 > v2;
+
+// B) Kinetic Energy Gain Check
+// Energy increase is only allowed if initial KE was zero (explosion case)
+const energyIncrease = dKE > 100; // tolerance
+const isExplosionCase = KEi === 0 && KEf > 0;
+
+const isEnergyViolation = energyIncrease && !isExplosionCase;
+
+// Final Physical Violation Flag
+const isPhysicallyImpossible = isPenetration || isEnergyViolation;
+
+            html += `<p><span class="text-gray-500">Initial Momentum:</span> <span class="text-blue-300 font-mono">${Pi.toFixed(0)} kg·m/s</span></p>`;
+            html += `<p><span class="text-gray-500">Final Momentum:</span> <span class="text-blue-300 font-mono">${Pf.toFixed(0)} kg·m/s</span></p>`;
+            html += `<hr class="border-gray-800 my-2">`;
+            
+            if (isPhysicallyImpossible) {
+
+    badge.innerText = "PHYSICS VIOLATION";
+    badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-red-900 text-white border border-red-500 animate-pulse";
+
+    html += `<p class="text-red-400 font-bold"><i class="fa-solid fa-ban"></i> PHYSICS VIOLATION</p>`;
+
+    if (isPenetration) {
+        html += `<p class="text-gray-300 text-xs mt-1">Rear vehicle exits faster than front vehicle after impact.</p>`;
+        html += `<p class="text-gray-500 text-xs mt-1">Objects cannot pass through each other.</p>`;
+    }
+
+    if (isEnergyViolation) {
+        html += `<p class="text-gray-300 text-xs mt-2">Kinetic energy increased without external energy input.</p>`;
+        html += `<p class="text-gray-500 text-xs mt-1">Energy cannot be created in a closed collision.</p>`;
+        html += `<p class="text-amber-400 text-xs mt-1">ΔKE = ${dKE.toFixed(0)} J</p>`;
+    }
+
+    // Force red energy bar
+    bar.style.width = '100%';
+    bar.className = 'h-full bg-red-600';
+    note.innerText = "Energy Creation Detected";
+}
+ else if (isConserved) {
+                badge.innerText = "PHYSICS VALID";
+                badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-green-900/50 text-green-400 border border-green-700";
+                html += `<p class="text-green-400 font-bold"><i class="fa-solid fa-check"></i> Momentum Conserved.</p>`;
+                
+                // Check Energy type
+const isPerfectlyInelastic = Math.abs(v1 - v2) < 0.01;
+
+if (Math.abs(dKE) < 1000) {
+
+    html += `<p class="text-blue-400">Type: <b>Elastic Collision</b> (Kinetic Energy Conserved)</p>`;
+
+} else if (dKE < 0) {
+
+    if (isPerfectlyInelastic) {
+        html += `<p class="text-red-400 font-bold">Type: <b>Perfectly Inelastic Collision</b></p>`;
+        html += `<p class="text-gray-400 text-xs mt-1">Objects move together after impact (v₁ = v₂).</p>`;
+    } else {
+        html += `<p class="text-amber-400">Type: <b>Inelastic Collision</b> (Energy lost to heat/sound)</p>`;
+        html += `<p class="text-xs text-gray-500 mt-1">Efficiency: ${(KEf/KEi*100).toFixed(1)}%</p>`;
+    }
+
+} else {
+
+    html += `<p class="text-purple-400">Type: <b>Super-Elastic</b> (Energy Added! Explosion?)</p>`;
+
+}
+                
+            } else {
+                badge.innerText = "MOMENTUM ERROR";
+                badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-amber-900/50 text-amber-400 border border-amber-700";
+                html += `<p class="text-amber-400 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> Momentum NOT Conserved.</p>`;
+                html += `<p class="text-gray-400 text-xs">Difference: ${momentumDiff.toFixed(0)} (Tolerance: 50)</p>`;
+                html += `<p class="text-gray-400 text-xs mt-2">Check your final velocity inputs.</p>`;
+            }
+            
+        } else {
+            // Calc Mode (Standard output)
+            html += `<p>Solver executed successfully.</p>`;
+            html += `<p class="text-gray-400 text-xs mt-2 italic">Note: Only solved the conservation of momentum equation, not proved if the case is valid or not.</p>`;
+            badge.innerText = "SOLVED";
+            badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-blue-900/50 text-blue-400 border border-blue-700";
+        }
+        
+        log.innerHTML = html;
+        
+        // Energy Bar Logic (Only if valid)
+        if (mode !== 'sim' || (v1 <= v2)) {
+            // Normalize width based on initial KE
+            // If KE lost, bar shrinks. If KE gained, bar fills red.
+            if (KEi === 0 && KEf === 0) {
+                 bar.style.width = '0%';
+            } else if (KEi === 0) {
+                 // Explosion from rest
+                 bar.style.width = '100%';
+                 bar.className = 'h-full bg-purple-500 w-full';
+            } else {
+                const ratio = Math.min((KEf / KEi) * 100, 100);
+                bar.style.width = ratio + '%';
+                if (dKE < -100) {
+                    bar.className = 'h-full bg-amber-500 transition-all duration-1000';
+                    note.innerText = "Energy Dissipated (Heat/Sound)";
+                } else if (dKE > 100) {
+                    bar.className = 'h-full bg-purple-500 transition-all duration-1000';
+                    note.innerText = "Energy Injected (Explosion)";
+                } else {
+                    bar.className = 'h-full bg-blue-500 transition-all duration-1000';
+                    note.innerText = "Perfectly Elastic";
+                }
+            }
+        }
+    }
+
+    // --- SOLVER MODE LOGIC ---
+    function updateSolverMode() {
+        // Unlock all inputs first
+        document.querySelectorAll('#panel_calc .input-group').forEach(el => {
+            el.classList.remove('calculated', 'opacity-50', 'pointer-events-none');
+            el.querySelector('input').readOnly = false;
+        });
+        
+        const target = document.getElementById('unknownSelector').value;
+        const targetGroup = document.getElementById('grp_calc_' + target);
+        const targetInput = document.getElementById('calc_' + target);
+        
+        // Lock target
+        targetGroup.classList.add('calculated', 'pointer-events-none');
+        targetInput.readOnly = true;
+        
+        solve();
+    }
+    
+    function setProblem(type) {
+        // Preset values for calculator
+        if(type === 'find_v2') {
+             document.getElementById('unknownSelector').value = 'v2';
+             document.getElementById('calc_m1').value = 1000;
+             document.getElementById('calc_u1').value = 20;
+             document.getElementById('calc_v1').value = 5;
+             document.getElementById('calc_m2').value = 1500;
+             document.getElementById('calc_u2').value = 0;
+        } else if (type === 'find_u1') {
+             document.getElementById('unknownSelector').value = 'u1';
+             document.getElementById('calc_m1').value = 2000;
+             document.getElementById('calc_v1').value = 10;
+             document.getElementById('calc_m2').value = 1000;
+             document.getElementById('calc_u2').value = -10;
+             document.getElementById('calc_v2').value = 20;
+        } else if (type === 'recoil') {
+             document.getElementById('unknownSelector').value = 'v1';
+             document.getElementById('calc_m1').value = 5000; // Cannon
+             document.getElementById('calc_u1').value = 0;
+             document.getElementById('calc_m2').value = 100; // Ball
+             document.getElementById('calc_u2').value = 0;
+             document.getElementById('calc_v2').value = 100; // Ball fired
+        }
+        updateSolverMode();
+    }
+    
+    function solve() {
+        const target = document.getElementById('unknownSelector').value;
+        
+        let m1 = parseFloat(document.getElementById('calc_m1').value);
+        let u1 = parseFloat(document.getElementById('calc_u1').value);
+        let v1 = parseFloat(document.getElementById('calc_v1').value);
+        let m2 = parseFloat(document.getElementById('calc_m2').value);
+        let u2 = parseFloat(document.getElementById('calc_u2').value);
+        let v2 = parseFloat(document.getElementById('calc_v2').value);
+        
+        // Conservation of Momentum: m1u1 + m2u2 = m1v1 + m2v2
+        let res = 0;
+        
+        if (target === 'v2') {
+            // v2 = (m1u1 + m2u2 - m1v1) / m2
+            res = ((m1*u1 + m2*u2) - (m1*v1)) / m2;
+        } else if (target === 'v1') {
+            res = ((m1*u1 + m2*u2) - (m2*v2)) / m1;
+        } else if (target === 'u1') {
+            res = ((m1*v1 + m2*v2) - (m2*u2)) / m1;
+        } else if (target === 'u2') {
+            res = ((m1*v1 + m2*v2) - (m1*u1)) / m2;
+        } else if (target === 'm1') {
+            // m1(u1 - v1) = m2(v2 - u2) => m1 = m2(v2 - u2) / (u1 - v1)
+            res = (m2 * (v2 - u2)) / (u1 - v1);
+        } else if (target === 'm2') {
+             res = (m1 * (u1 - v1)) / (v2 - u2);
+        }
+        
+        if (!isNaN(res) && isFinite(res)) {
+            document.getElementById('calc_' + target).value = parseFloat(res.toFixed(2));
+        } else {
+            document.getElementById('calc_' + target).value = "";
+        }
+    }
+
+    // --- GAME (QUIZ) LOGIC ---
+    let gameTimer, gameInterval;
+    let score = 0;
+    let questionCount = 0;
+    let currentAnswer = 0;
+    
+    function startGame() {
+        document.getElementById('gameInterface').classList.remove('hidden');
+        document.getElementById('gameOverScreen').classList.add('hidden');
+        score = 0;
+        questionCount = 0;
+        document.getElementById('gameScore').innerText = score;
+        
+        startTimer();
+        nextQuestion();
+    }
+    
+    function startTimer() {
+        let t = 60;
+        const el = document.getElementById('gameTimer');
+        const bar = document.getElementById('progressBar');
+        el.innerText = t;
+        bar.style.animation = 'none';
+        bar.offsetHeight; /* trigger reflow */
+        bar.style.animation = 'countdown 60s linear forwards';
+        
+        if(gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(() => {
+            t--;
+            el.innerText = t;
+            if(t <= 0) endGame();
+        }, 1000);
+    }
+    
+    function nextQuestion() {
+        if(questionCount >= 10) {
+            endGame();
+            return;
+        }
+        questionCount++;
+        document.getElementById('gameQNum').innerText = questionCount;
+        
+        // Generate Momentum Question
+        // Types: 1. Calculate P, 2. Conserve P find V
+        const type = Math.random() > 0.5 ? 1 : 2;
+        let qText = "";
+        let ans = 0;
+        let unit = "";
+        
+        if (type === 1) {
+            const m = Math.floor(Math.random() * 10) + 1;
+            const v = Math.floor(Math.random() * 20) + 1;
+            qText = `An object of mass ${m}kg is moving at ${v}m/s. What is its momentum?`;
+            ans = m * v;
+            unit = "kg·m/s";
+        } else {
+            const m1_g = Math.floor(Math.random() * 5) + 1;
+            const u1_g = Math.floor(Math.random() * 10) + 2;
+            const m2_g = Math.floor(Math.random() * 5) + 1;
+            // perfectly inelastic
+            qText = `A ${m1_g}kg cart at ${u1_g}m/s hits a stationary ${m2_g}kg cart and they stick. Final speed?`;
+            ans = (m1_g * u1_g) / (m1_g + m2_g);
+            unit = "m/s";
+        }
+        
+        currentAnswer = parseFloat(ans.toFixed(1));
+        document.getElementById('questionText').innerText = qText;
+        
+        // Generate Options
+        const opts = [currentAnswer];
+        while(opts.length < 4) {
+            let fake = currentAnswer + (Math.floor(Math.random() * 10) - 5);
+            if(fake < 0) fake = 0;
+            fake = parseFloat(fake.toFixed(1));
+            if(!opts.includes(fake)) opts.push(fake);
+        }
+        // Shuffle
+        opts.sort(() => Math.random() - 0.5);
+        
+        const btns = document.querySelectorAll('.quiz-option');
+        btns.forEach((btn, i) => {
+            btn.innerText = opts[i] + " " + unit;
+            btn.className = 'quiz-option p-4 md:p-6 rounded-xl text-lg md:text-xl font-bold text-gray-300 text-left';
+            btn.onclick = () => checkAnswer(opts[i], btn);
+        });
+    }
+    
+    function checkAnswer(val, btn) {
+        if(Math.abs(val - currentAnswer) < 0.1) {
+            score++;
+            document.getElementById('gameScore').innerText = score;
+            btn.classList.add('quiz-correct');
+        } else {
+            btn.classList.add('quiz-wrong');
+        }
+        
+        setTimeout(() => {
+            nextQuestion();
+        }, 500);
+    }
+    
+    function endGame() {
+        clearInterval(gameInterval);
+        document.getElementById('gameOverScreen').classList.remove('hidden');
+        document.getElementById('finalScore').innerText = score + "/10";
+        
+        let rank = "Physics Novice";
+        if(score > 3) rank = "Lab Assistant";
+        if(score > 6) rank = "Research Scientist";
+        if(score > 9) rank = "Nobel Laureate";
+        document.getElementById('finalRank').innerText = rank;
+    }
+
+    // Init
+    init();
+
+</script>
+</body>
+</html>
