@@ -986,7 +986,7 @@
             
             // 1. Basic Momentum Check
             const momentumDiff = Math.abs(Pf - Pi);
-            const isConserved = momentumDiff < 50; // Tolerance
+            const isConserved = momentumDiff < 20; // Tolerance
             
 // 2. Physical Validity Checks
 
@@ -1038,7 +1038,7 @@ const isPhysicallyImpossible = isPenetration || isEnergyViolation;
                 // Check Energy type
 const isPerfectlyInelastic = Math.abs(v1 - v2) < 0.01;
 
-if (Math.abs(dKE) < 1000) {
+if (Math.abs(dKE) < 0) {
 
     html += `<p class="text-blue-400">Type: <b>Elastic Collision</b> (Kinetic Energy Conserved)</p>`;
 
@@ -1054,7 +1054,7 @@ if (Math.abs(dKE) < 1000) {
 
 } else {
 
-    html += `<p class="text-purple-400">Type: <b>Super-Elastic</b> (Energy Added! Explosion?)</p>`;
+    html += `<p class="text-purple-400">Type: <b>Perfectly Elastic Collision</b> (No energy lost?!)</p>`;
 
 }
                 
@@ -1089,10 +1089,10 @@ if (Math.abs(dKE) < 1000) {
             } else {
                 const ratio = Math.min((KEf / KEi) * 100, 100);
                 bar.style.width = ratio + '%';
-                if (dKE < -100) {
+                if (dKE < 0) {
                     bar.className = 'h-full bg-amber-500 transition-all duration-1000';
                     note.innerText = "Energy Dissipated (Heat/Sound)";
-                } else if (dKE > 100) {
+                } else if (dKE > 10) {
                     bar.className = 'h-full bg-purple-500 transition-all duration-1000';
                     note.innerText = "Energy Injected (Explosion)";
                 } else {
